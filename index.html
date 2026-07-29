@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+  <title>当落＆整理番号シミュレーター</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px 14px 40px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        system-ui, sans-serif;
+      background: #f5f5f7;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .note {
+      margin: 0 0 16px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      padding: 16px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 11px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab {
+      background: #eee;
+      color: #222;
+    }
+
+    .tab.active {
+      background: #222;
+      color: #fff;
+    }
+
+    .run {
+      width: 100%;
+      margin-top: 14px;
+      background: #222;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    .sub {
+      background: #fff;
+      color: #222;
+      border: 1px solid #ccc;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 520px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 5px;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      color: #222;
+      font: inherit;
+      font-size: 16px;
+    }
+
+    .hint {
+      display: block;
+      margin-top: 2px;
+      color: #777;
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .quick {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .quick input {
+      margin: 0;
+    }
+
+    .error {
+      margin-top: 10px;
+      color: #b42318;
+      font-weight: 700;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    @media (max-width: 520px) {
+      .summary {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stat {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 11px;
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 20px;
+    }
+
+    .stat span {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .trial {
+      padding: 14px 0;
+      border-top: 1px solid #ddd;
+    }
+
+    .trial:first-child {
+      border-top: 0;
+    }
+
+    .trial-title {
+      margin-bottom: 4px;
+      font-weight: 800;
+    }
+
+    .nums {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
+        monospace;
+      overflow-wrap: anywhere;
+    }
+
+    .best {
+      color: #08783f;
+      font-weight: 900;
+    }
+
+    .miss {
+      color: #b42318;
+      font-weight: 900;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #111;
+        color: #f4f4f4;
+      }
+
+      .card {
+        background: #1b1b1d;
+        border-color: #38383c;
+      }
+
+      input,
+      select {
+        background: #222;
+        color: #fff;
+        border-color: #555;
+      }
+
+      .tab {
+        background: #333;
+        color: #fff;
+      }
+
+      .tab.active,
+      .run {
+        background: #f4f4f4;
+        color: #111;
+      }
+
+      .sub {
+        background: #1b1b1d;
+        color: #fff;
+        border-color: #555;
+      }
+
+      .trial,
+      .stat {
+        border-color: #38383c;
+      }
+
+      .note,
+      .hint,
+      .muted,
+      .stat span {
+        color: #aaa;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>当落＆整理番号シミュレーター</h1>
+
+    <p class="note">
+      当落込み抽選と、7D250のような整理番号だけの抽選に対応。
+      整理番号はすべて重複なしです。
+    </p>
+
+    <section class="card">
+      <div class="tabs">
+        <button id="directTab" class="tab active" type="button">
+          整理番号だけ
+        </button>
+
+        <button id="lotteryTab" class="tab" type="button">
+          当落込み
+        </button>
+      </div>
+    </section>
+
+    <section id="directPanel" class="card">
+      <div class="quick">
+        <input
+          id="quickInput"
+          type="text"
+          value="7D250 × 5"
+          aria-label="クイック入力"
+        >
+
+        <button id="applyQuick" class="sub" type="button">
+          反映
+        </button>
+      </div>
+
+      <div class="grid">
+        <label>
+          チケット枚数
+          <input
+            id="directTickets"
+            type="number"
+            value="7"
+            min="1"
+          >
+          <span class="hint">7D250なら7</span>
+        </label>
+
+        <label>
+          整理番号の最大値
+          <input
+            id="directMax"
+            type="number"
+            value="250"
+            min="1"
+          >
+          <span class="hint">7D250なら250</span>
+        </label>
+
+        <label>
+          試行回数
+          <input
+            id="directTrials"
+            type="number"
+            value="5"
+            min="1"
+            max="500"
+          >
+        </label>
+
+        <label>
+          最前ライン
+          <input
+            id="directFront"
+            type="number"
+            value="12"
+            min="1"
+          >
+          <span class="hint">この番号以内なら最前圏</span>
+        </label>
+      </div>
+
+      <button id="runDirect" class="run" type="button">
+        抽選する
+      </button>
+
+      <div id="directError" class="error"></div>
+    </section>
+
+    <section id="lotteryPanel" class="card" hidden>
+      <div class="grid">
+        <label>
+          会場キャパ C
+          <input
+            id="cap"
+            type="number"
+            value="700"
+            min="1"
+          >
+        </label>
+
+        <label>
+          予想倍率 B
+          <input
+            id="mult"
+            type="number"
+            value="2.5"
+            min="1"
+            step="0.1"
+          >
+        </label>
+
+        <label>
+          応募名義数 E
+          <input
+            id="entries"
+            type="number"
+            value="10"
+            min="1"
+          >
+        </label>
+
+        <label>
+          試行回数
+          <input
+            id="lotteryTrials"
+            type="number"
+            value="1"
+            min="1"
+            max="500"
+          >
+        </label>
+
+        <label>
+          最前ライン
+          <input
+            id="lotteryFront"
+            type="number"
+            value="12"
+            min="1"
+          >
+        </label>
+
+        <label>
+          整理番号表示
+          <select id="lotteryOrder">
+            <option value="open">開封順</option>
+            <option value="sorted">昇順</option>
+          </select>
+        </label>
+      </div>
+
+      <button id="runLottery" class="run" type="button">
+        抽選する
+      </button>
+
+      <div id="lotteryError" class="error"></div>
+    </section>
+
+    <section id="resultCard" class="card" hidden>
+      <h2>結果</h2>
+
+      <div id="resultMeta" class="muted"></div>
+
+      <div id="summary" class="summary"></div>
+
+      <div id="results"></div>
+
+      <div class="actions">
+        <button id="rerun" class="sub" type="button">
+          同条件でもう一度
+        </button>
+
+        <button id="copyResult" class="sub" type="button">
+          結果をコピー
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const $ = id => document.getElementById(id);
+
+      let currentMode = "direct";
+      let lastAction = null;
+      let lastPlainText = "";
+
+      function randomInt(maxExclusive) {
+        if (
+          window.crypto &&
+          typeof window.crypto.getRandomValues === "function"
+        ) {
+          const maxUint = 4294967296;
+          const limit =
+            Math.floor(maxUint / maxExclusive) * maxExclusive;
+
+          const array = new Uint32Array(1);
+          let value;
+
+          do {
+            window.crypto.getRandomValues(array);
+            value = array[0];
+          } while (value >= limit);
+
+          return value % maxExclusive;
+        }
+
+        return Math.floor(Math.random() * maxExclusive);
+      }
+
+      function sampleUnique(k, n) {
+        k = Math.max(0, Math.min(Math.floor(k), Math.floor(n)));
+
+        const selected = new Set();
+
+        for (let j = n - k + 1; j <= n; j++) {
+          const candidate = 1 + randomInt(j);
+
+          if (selected.has(candidate)) {
+            selected.add(j);
+          } else {
+            selected.add(candidate);
+          }
+        }
+
+        return Array.from(selected);
+      }
+
+      function toInt(value, min, max) {
+        const number = Math.floor(Number(value));
+
+        if (!Number.isFinite(number)) {
+          return min;
+        }
+
+        return Math.min(max, Math.max(min, number));
+      }
+
+      function switchMode(mode) {
+        currentMode = mode;
+
+        const direct = mode === "direct";
+
+        $("directPanel").hidden = !direct;
+        $("lotteryPanel").hidden = direct;
+
+        $("directTab").classList.toggle("active", direct);
+        $("lotteryTab").classList.toggle("active", !direct);
+      }
+
+      function showResults(meta, stats, html, plainText) {
+        $("resultMeta").textContent = meta;
+
+        $("summary").innerHTML = stats.map(stat => `
+          <div class="stat">
+            <strong>${stat.value}</strong>
+            <span>${stat.label}</span>
+          </div>
+        `).join("");
+
+        $("results").innerHTML = html;
+        $("resultCard").hidden = false;
+
+        lastPlainText = plainText;
+
+        $("resultCard").scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+
+      function applyQuickInput() {
+        $("directError").textContent = "";
+
+        const raw = $("quickInput")
+          .value
+          .trim()
+          .replace(/[×ｘX]/g, "x")
+          .replace(/\s+/g, "");
+
+        const match = raw.match(
+          /^(\d+)[dD](\d+)(?:x(\d+))?$/
+        );
+
+        if (!match) {
+          $("directError").textContent =
+            "7D250 または 7D250 × 5 の形で入力してください。";
+          return false;
+        }
+
+        const tickets = Number(match[1]);
+        const maxNumber = Number(match[2]);
+        const trials = match[3]
+          ? Number(match[3])
+          : 1;
+
+        if (
+          tickets < 1 ||
+          maxNumber < 1 ||
+          tickets > maxNumber
+        ) {
+          $("directError").textContent =
+            "チケット枚数は最大整理番号以下にしてください。";
+          return false;
+        }
+
+        $("directTickets").value = tickets;
+        $("directMax").value = maxNumber;
+        $("directTrials").value =
+          Math.min(500, Math.max(1, trials));
+
+        return true;
+      }
+
+      function runDirect() {
+        $("directError").textContent = "";
+
+        const tickets = toInt(
+          $("directTickets").value,
+          1,
+          9999
+        );
+
+        const maxNumber = toInt(
+          $("directMax").value,
+          1,
+          100000
+        );
+
+        const trials = toInt(
+          $("directTrials").value,
+          1,
+          500
+        );
+
+        const frontLine = toInt(
+          $("directFront").value,
+          1,
+          maxNumber
+        );
+
+        if (tickets > maxNumber) {
+          $("directError").textContent =
+            "チケット枚数は最大整理番号以下にしてください。";
+          return;
+        }
+
+        let frontHits = 0;
+        let bestSum = 0;
+
+        const rows = [];
+        const plain = [
+          `${tickets}D${maxNumber} × ${trials}回`
+        ];
+
+        for (let i = 1; i <= trials; i++) {
+          const numbers = sampleUnique(
+            tickets,
+            maxNumber
+          );
+
+          const sorted = [...numbers].sort(
+            (a, b) => a - b
+          );
+
+          const best = sorted[0];
+          const isFront = best <= frontLine;
+
+          if (isFront) {
+            frontHits++;
+          }
+
+          bestSum += best;
+
+          rows.push(`
+            <div class="trial">
+              <div class="trial-title">
+                第${i}回：
+                最良
+                <span class="${isFront ? "best" : ""}">
+                  ${best}番
+                </span>
+                ${
+                  isFront
+                    ? `（最前圏・${frontLine}番以内）`
+                    : ""
+                }
+              </div>
+
+              <div>
+                開封順：
+                <span class="nums">
+                  ${numbers.join(" → ")}
+                </span>
+              </div>
+
+              <div class="muted">
+                昇順：
+                <span class="nums">
+                  ${sorted.join(", ")}
+                </span>
+              </div>
+            </div>
+          `);
+
+          plain.push(
+            `第${i}回：${numbers.join(" → ")}｜最良 ${best}番${
+              isFront ? "（最前圏）" : ""
+            }`
+          );
+        }
+
+        const hitRate = (
+          frontHits / trials * 100
+        ).toFixed(trials === 1 ? 0 : 1);
+
+        const averageBest = (
+          bestSum / trials
+        ).toFixed(1);
+
+        showResults(
+          `${tickets}D${maxNumber}`,
+          [
+            {
+              value: `${frontHits}/${trials}`,
+              label: `最前圏ヒット（${frontLine}番以内）`
+            },
+            {
+              value: `${hitRate}%`,
+              label: "今回のヒット率"
+            },
+            {
+              value: `${averageBest}番`,
+              label: "最良番号の平均"
+            }
+          ],
+          rows.join(""),
+          plain.join("\n")
+        );
+
+        lastAction = runDirect;
+      }
+
+      function runLottery() {
+        $("lotteryError").textContent = "";
+
+        const capacity = toInt(
+          $("cap").value,
+          1,
+          100000
+        );
+
+        const multiplier = Math.max(
+          1,
+          Number($("mult").value) || 1
+        );
+
+        const totalApplications = Math.max(
+          capacity,
+          Math.round(capacity * multiplier)
+        );
+
+        const entries = toInt(
+          $("entries").value,
+          1,
+          Math.min(totalApplications, 10000)
+        );
+
+        const trials = toInt(
+          $("lotteryTrials").value,
+          1,
+          500
+        );
+
+        const frontLine = toInt(
+          $("lotteryFront").value,
+          1,
+          capacity
+        );
+
+        const order = $("lotteryOrder").value;
+
+        let totalWins = 0;
+        let winTrials = 0;
+        let frontHits = 0;
+
+        const rows = [];
+        const plain = [
+          `C=${capacity}, B=${multiplier}, M=${totalApplications}, E=${entries}`
+        ];
+
+        for (let i = 1; i <= trials; i++) {
+          const winnerIds = new Set(
+            sampleUnique(
+              capacity,
+              totalApplications
+            )
+          );
+
+          const myIds = sampleUnique(
+            entries,
+            totalApplications
+          );
+
+          const hitIds = myIds.filter(id =>
+            winnerIds.has(id)
+          );
+
+          const winCount = hitIds.length;
+
+          const numbers = sampleUnique(
+            winCount,
+            capacity
+          );
+
+          const sorted = [...numbers].sort(
+            (a, b) => a - b
+          );
+
+          const shown =
+            order === "sorted"
+              ? sorted
+              : numbers;
+
+          const best =
+            winCount > 0
+              ? sorted[0]
+              : null;
+
+          const isFront =
+            best !== null &&
+            best <= frontLine;
+
+          totalWins += winCount;
+
+          if (winCount > 0) {
+            winTrials++;
+          }
+
+          if (isFront) {
+            frontHits++;
+          }
+
+          rows.push(`
+            <div class="trial">
+              <div class="trial-title">
+                第${i}回：
+                ${
+                  winCount > 0
+                    ? `${winCount}枚当選`
+                    : `<span class="miss">全落</span>`
+                }
+                ${
+                  best !== null
+                    ? `／最良 <span class="${
+                        isFront ? "best" : ""
+                      }">${best}番</span>`
+                    : ""
+                }
+              </div>
+
+              <div>
+                整理番号：
+                <span class="nums">
+                  ${
+                    winCount > 0
+                      ? shown.join(
+                          order === "sorted"
+                            ? ", "
+                            : " → "
+                        )
+                      : "—"
+                  }
+                </span>
+              </div>
+
+              <div class="muted">
+                当選応募ID：
+                <span class="nums">
+                  ${
+                    winCount > 0
+                      ? hitIds.join(", ")
+                      : "—"
+                  }
+                </span>
+              </div>
+            </div>
+          `);
+
+          plain.push(
+            winCount > 0
+              ? `第${i}回：${winCount}枚当選｜${shown.join(
+                  order === "sorted"
+                    ? ", "
+                    : " → "
+                )}｜最良 ${best}番`
+              : `第${i}回：全落`
+          );
+        }
+
+        const averageWins = (
+          totalWins / trials
+        ).toFixed(2);
+
+        const winRate = (
+          winTrials / trials * 100
+        ).toFixed(trials === 1 ? 0 : 1);
+
+        const frontRate = (
+          frontHits / trials * 100
+        ).toFixed(trials === 1 ? 0 : 1);
+
+        showResults(
+          `C=${capacity}・B=${multiplier}・E=${entries}`,
+          [
+            {
+              value: `${averageWins}枚`,
+              label: "平均当選数"
+            },
+            {
+              value: `${winRate}%`,
+              label: "1枚以上当選"
+            },
+            {
+              value: `${frontRate}%`,
+              label: `最前圏ヒット（${frontLine}番以内）`
+            }
+          ],
+          rows.join(""),
+          plain.join("\n")
+        );
+
+        lastAction = runLottery;
+      }
+
+      async function copyResult() {
+        const button = $("copyResult");
+        const original = button.textContent;
+
+        try {
+          await navigator.clipboard.writeText(
+            lastPlainText
+          );
+        } catch {
+          const textarea =
+            document.createElement("textarea");
+
+          textarea.value = lastPlainText;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+
+        button.textContent = "コピーしました";
+
+        setTimeout(() => {
+          button.textContent = original;
+        }, 1200);
+      }
+
+      $("directTab").addEventListener(
+        "click",
+        () => switchMode("direct")
+      );
+
+      $("lotteryTab").addEventListener(
+        "click",
+        () => switchMode("lottery")
+      );
+
+      $("applyQuick").addEventListener(
+        "click",
+        applyQuickInput
+      );
+
+      $("runDirect").addEventListener(
+        "click",
+        runDirect
+      );
+
+      $("runLottery").addEventListener(
+        "click",
+        runLottery
+      );
+
+      $("rerun").addEventListener(
+        "click",
+        () => {
+          if (lastAction) {
+            lastAction();
+          }
+        }
+      );
+
+      $("copyResult").addEventListener(
+        "click",
+        copyResult
+      );
+
+      $("quickInput").addEventListener(
+        "keydown",
+        event => {
+          if (event.key === "Enter") {
+            if (applyQuickInput()) {
+              runDirect();
+            }
+          }
+        }
+      );
+    })();
+  </script>
+</body>
+</html>
