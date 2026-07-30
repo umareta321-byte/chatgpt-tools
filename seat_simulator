@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>座席発券シミュレーター v1.0</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --accent: #7a3045;
+      --accent-contrast: #fff;
+      --accent-soft: color-mix(in srgb, var(--accent) 12%, white);
+      --bg: #f5f5f7;
+      --card: #fff;
+      --text: #222;
+      --muted: #6b6b70;
+      --border: #dddddf;
+      --danger: #b42318;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px 14px 40px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    main {
+      width: min(100%, 760px);
+      margin: 0 auto;
+    }
+
+    h1, h2 { line-height: 1.3; }
+    h1 { margin: 0 0 6px; font-size: 28px; }
+    h2 { margin: 0 0 12px; font-size: 20px; }
+
+    .note {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .card {
+      margin-bottom: 14px;
+      padding: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input, select {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 5px;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      color: #222;
+      font: inherit;
+      font-size: 16px;
+    }
+
+    input[type="color"] {
+      padding: 4px;
+      cursor: pointer;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 11px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .run {
+      width: 100%;
+      margin-top: 14px;
+      background: var(--accent);
+      color: var(--accent-contrast);
+      font-size: 16px;
+    }
+
+    .sub {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid #ccc;
+    }
+
+    .danger {
+      color: var(--danger);
+      border-color: #e4b9b4;
+    }
+
+    .hint {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .file-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    @media (max-width: 520px) {
+      .file-row { grid-template-columns: 1fr; }
+    }
+
+    .status {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #f1f1f3;
+      font-size: 13px;
+    }
+
+    .status.ok {
+      background: var(--accent-soft);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, white);
+    }
+
+    .error {
+      margin-top: 10px;
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .hero {
+      padding: 20px 16px;
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      background: var(--accent-soft);
+      text-align: center;
+    }
+
+    .hero-area {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .hero-seat {
+      margin: 2px 0;
+      color: var(--accent);
+      font-size: clamp(30px, 8vw, 48px);
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+
+    .badge {
+      display: inline-block;
+      margin: 5px 3px 0;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-contrast);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    @media (max-width: 520px) {
+      .summary { grid-template-columns: 1fr; }
+    }
+
+    .stat {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--accent);
+      font-size: 20px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .result-row {
+      padding: 14px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .result-row:first-child { border-top: 0; }
+
+    .seat-line {
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .seat-tags {
+      margin-top: 3px;
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    .history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .history-count {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111;
+        --card: #1b1b1d;
+        --text: #f4f4f4;
+        --muted: #aaa;
+        --border: #38383c;
+        --accent-soft: color-mix(in srgb, var(--accent) 22%, #1b1b1d);
+      }
+
+      input, select {
+        background: #222;
+        color: #fff;
+        border-color: #555;
+      }
+
+      .sub {
+        background: var(--card);
+        color: var(--text);
+        border-color: #555;
+      }
+
+      .status { background: #242426; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>座席発券シミュレーター</h1>
+    <p class="note">
+      会場データ（.md）を読み込み、座席をランダムに発券します。
+      最前列と通路側だけ、選んだ色で表示します。
+    </p>
+
+    <section class="card">
+      <h2>会場データ</h2>
+
+      <div class="file-row">
+        <label>
+          Markdownファイル
+          <input id="hallFile" type="file" accept=".md,text/markdown,text/plain">
+          <span class="hint">ファイルは端末内で処理され、外部には送信されません。</span>
+        </label>
+
+        <button id="loadSample" class="sub" type="button">サンプルを使う</button>
+      </div>
+
+      <div id="hallStatus" class="status">会場データが未読込です。</div>
+      <div id="hallError" class="error"></div>
+    </section>
+
+    <section class="card">
+      <h2>発券設定</h2>
+
+      <div class="grid">
+        <label>
+          試行回数
+          <input id="trialCount" type="number" value="1" min="1" max="500">
+        </label>
+
+        <label>
+          色
+          <input id="accentColor" type="color" value="#7a3045">
+        </label>
+
+        <label>
+          重複
+          <select id="duplicateMode">
+            <option value="exclude">同じ試行内では重複なし</option>
+            <option value="allow">毎回すべての席から抽選</option>
+          </select>
+        </label>
+      </div>
+
+      <button id="runDraw" class="run" type="button">発券する</button>
+      <div id="drawError" class="error"></div>
+    </section>
+
+    <section id="resultCard" class="card" hidden>
+      <h2>今回の結果</h2>
+
+      <div id="singleResult"></div>
+      <div id="batchSummary" class="summary" hidden></div>
+      <div id="batchResults"></div>
+
+      <div class="actions">
+        <button id="rerun" class="sub" type="button">同条件でもう一度</button>
+        <button id="copyResult" class="sub" type="button">結果をコピー</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="history-head">
+        <h2 style="margin:0;">履歴</h2>
+        <span id="historyCount" class="history-count">0件</span>
+      </div>
+
+      <div id="history">
+        <p class="note" style="margin:0;">まだ履歴はありません。</p>
+      </div>
+
+      <div class="actions">
+        <button id="clearHistory" class="sub danger" type="button">履歴をリセット</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const $ = id => document.getElementById(id);
+
+      const SAMPLE_MD = `# サンプルホール
+
+## エリア: 1階席
+座席: A-H | 1-26
+座席: I-R | 1-30
+通路: A-R | 9>10
+通路: A-R | 19>20
+最前: A
+
+## エリア: 2階席
+座席: A-F | 1-24
+通路: A-F | 12>13
+最前: A
+`;
+
+      let hall = null;
+      let lastSettings = null;
+      let lastPlainText = "";
+      let history = [];
+
+      function randomInt(maxExclusive) {
+        if (!Number.isInteger(maxExclusive) || maxExclusive <= 0) {
+          throw new Error("抽選対象がありません。");
+        }
+
+        if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+          const maxUint = 4294967296;
+          const limit = Math.floor(maxUint / maxExclusive) * maxExclusive;
+          const array = new Uint32Array(1);
+          let value;
+
+          do {
+            window.crypto.getRandomValues(array);
+            value = array[0];
+          } while (value >= limit);
+
+          return value % maxExclusive;
+        }
+
+        return Math.floor(Math.random() * maxExclusive);
+      }
+
+      function normalize(value) {
+        return String(value)
+          .replace(/[Ａ-Ｚａ-ｚ０-９]/g, char =>
+            String.fromCharCode(char.charCodeAt(0) - 0xFEE0)
+          )
+          .replace(/｜/g, "|")
+          .replace(/[＞→]/g, ">")
+          .replace(/[〜～]/g, "-")
+          .trim();
+      }
+
+      function splitList(value) {
+        return normalize(value)
+          .split(/[,、]/)
+          .map(item => item.trim())
+          .filter(Boolean);
+      }
+
+      function expandToken(token) {
+        const value = normalize(token);
+
+        const numeric = value.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (numeric) {
+          const start = Number(numeric[1]);
+          const end = Number(numeric[2]);
+          const step = start <= end ? 1 : -1;
+          const output = [];
+
+          for (let current = start; ; current += step) {
+            output.push(String(current));
+            if (current === end) break;
+          }
+          return output;
+        }
+
+        const alphabet = value.match(/^([A-Za-z])\s*-\s*([A-Za-z])$/);
+        if (alphabet) {
+          const start = alphabet[1].toUpperCase().charCodeAt(0);
+          const end = alphabet[2].toUpperCase().charCodeAt(0);
+          const step = start <= end ? 1 : -1;
+          const output = [];
+
+          for (let current = start; ; current += step) {
+            output.push(String.fromCharCode(current));
+            if (current === end) break;
+          }
+          return output;
+        }
+
+        return [value];
+      }
+
+      function expandExpression(value) {
+        return splitList(value).flatMap(expandToken);
+      }
+
+      function parseNumbers(value) {
+        const output = [];
+
+        for (const token of splitList(value)) {
+          const range = token.match(/^(\d+)\s*-\s*(\d+)$/);
+
+          if (range) {
+            const start = Number(range[1]);
+            const end = Number(range[2]);
+                      const step = start <= end ? 1 : -1;
+
+            for (let current = start; ; current += step) {
+              output.push(current);
+              if (current === end) break;
+            }
+          } else if (/^\d+$/.test(token)) {
+            output.push(Number(token));
+          } else {
+            throw new Error(`座席番号「${token}」を解釈できません。`);
+          }
+        }
+
+        return output;
+      }
+
+      function parsePair(value) {
+        const parts = normalize(value).split("|").map(part => part.trim());
+
+        if (parts.length !== 2) {
+          throw new Error(`「${value}」は「列 | 座席番号」の形で入力してください。`);
+        }
+
+        return parts;
+      }
+
+      function parseMarkdown(text) {
+        const lines = String(text).replace(/\r\n?/g, "\n").split("\n");
+        const parsed = { name: "名称未設定", areas: [] };
+        let currentArea = null;
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+
+          if (!line || line === "---" || line.startsWith("<!--")) continue;
+
+          const title = line.match(/^#\s+(.+)$/);
+          if (title && !line.startsWith("##")) {
+            parsed.name = title[1].trim();
+            continue;
+          }
+
+          const areaHeading = line.match(/^##\s*(?:エリア|area)\s*[:：]\s*(.+)$/i);
+          if (areaHeading) {
+            currentArea = {
+              name: areaHeading[1].trim(),
+              seatRules: [],
+              exclusions: [],
+              aisleRules: [],
+              frontRows: new Set()
+            };
+            parsed.areas.push(currentArea);
+            continue;
+          }
+
+          if (!currentArea) continue;
+
+          const keyValue = line.match(
+            /^(座席|seats?|除外|exclude|通路|aisles?|最前|front)\s*[:：]\s*(.+)$/i
+          );
+          if (!keyValue) continue;
+
+          const key = keyValue[1].toLowerCase();
+          const value = keyValue[2].trim();
+
+          if (key === "座席" || key.startsWith("seat")) {
+            const [rowsText, seatsText] = parsePair(value);
+            currentArea.seatRules.push({
+              rows: expandExpression(rowsText),
+              numbers: parseNumbers(seatsText)
+            });
+          } else if (key === "除外" || key === "exclude") {
+            const [rowsText, seatsText] = parsePair(value);
+            currentArea.exclusions.push({
+              rows: expandExpression(rowsText),
+              numbers: parseNumbers(seatsText)
+            });
+          } else if (key === "通路" || key.startsWith("aisle")) {
+            const [rowsText, boundaryText] = parsePair(value);
+            const boundary = normalize(boundaryText).match(/^(\d+)\s*>\s*(\d+)$/);
+
+            if (!boundary) {
+              throw new Error(`通路「${boundaryText}」は「9>10」の形で入力してください。`);
+            }
+
+            currentArea.aisleRules.push({
+              rows: new Set(expandExpression(rowsText)),
+              left: Number(boundary[1]),
+              right: Number(boundary[2])
+            });
+          } else if (key === "最前" || key === "front") {
+            for (const row of expandExpression(value)) {
+              currentArea.frontRows.add(row);
+            }
+          }
+        }
+
+        if (parsed.areas.length === 0) {
+          throw new Error("エリアがありません。「## エリア: 1階席」の形式で追加してください。");
+        }
+
+        const seats = [];
+        const seen = new Set();
+
+        for (const area of parsed.areas) {
+          const excluded = new Set();
+
+          for (const rule of area.exclusions) {
+            for (const row of rule.rows) {
+              for (const number of rule.numbers) {
+                excluded.add(`${row}__${number}`);
+              }
+            }
+          }
+
+          for (const rule of area.seatRules) {
+            for (const row of rule.rows) {
+              for (const number of rule.numbers) {
+                const localKey = `${row}__${number}`;
+                const globalKey = `${area.name}__${localKey}`;
+
+                if (excluded.has(localKey) || seen.has(globalKey)) continue;
+                seen.add(globalKey);
+
+                const isAisle = area.aisleRules.some(rule =>
+                  rule.rows.has(row) &&
+                  (number === rule.left || number === rule.right)
+                );
+
+                seats.push({
+                  id: globalKey,
+                  area: area.name,
+                  row,
+                  number,
+                  isFront: area.frontRows.has(row),
+                  isAisle
+                });
+              }
+            }
+          }
+        }
+
+        if (seats.length === 0) {
+          throw new Error("抽選できる座席が1席もありません。");
+        }
+
+        return {
+          name: parsed.name,
+          areas: parsed.areas.map(area => area.name),
+          seats
+        };
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function hexToRgb(hex) {
+        const match = String(hex).match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+        if (!match) return null;
+
+        return {
+          r: parseInt(match[1], 16),
+          g: parseInt(match[2], 16),
+          b: parseInt(match[3], 16)
+        };
+      }
+
+      function setAccent(color) {
+        document.documentElement.style.setProperty("--accent", color);
+
+        const rgb = hexToRgb(color);
+        const luminance = rgb
+          ? (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255
+          : 0;
+
+        document.documentElement.style.setProperty(
+          "--accent-contrast",
+          luminance > 0.62 ? "#111" : "#fff"
+        );
+      }
+
+      function loadHallFromText(text, sourceLabel) {
+        $("hallError").textContent = "";
+
+        try {
+          hall = parseMarkdown(text);
+
+          const frontCount = hall.seats.filter(seat => seat.isFront).length;
+          const aisleCount = hall.seats.filter(seat => seat.isAisle).length;
+
+          $("hallStatus").className = "status ok";
+          $("hallStatus").innerHTML = `
+            <strong>${escapeHtml(hall.name)}</strong><br>
+            ${hall.seats.length.toLocaleString("ja-JP")}席・
+            ${hall.areas.length}エリア・
+            最前${frontCount.toLocaleString("ja-JP")}席・
+            通路側${aisleCount.toLocaleString("ja-JP")}席
+            <span class="hint">読込元：${escapeHtml(sourceLabel)}</span>
+          `;
+
+          $("resultCard").hidden = true;
+        } catch (error) {
+          hall = null;
+          $("hallStatus").className = "status";
+          $("hallStatus").textContent = "会場データを読み込めませんでした。";
+          $("hallError").textContent =
+            error instanceof Error ? error.message : "不明なエラーです。";
+        }
+      }
+
+      function drawSeats(count, excludeDuplicates) {
+        if (!hall) {
+          throw new Error("先に会場データを読み込んでください。");
+        }
+
+        if (excludeDuplicates && count > hall.seats.length) {
+          throw new Error(`重複なしで引ける上限は${hall.seats.length}回です。`);
+        }
+
+        if (!excludeDuplicates) {
+          return Array.from(
+            { length: count },
+            () => hall.seats[randomInt(hall.seats.length)]
+          );
+        }
+
+        const pool = [...hall.seats];
+        const results = [];
+
+        for (let i = 0; i < count; i++) {
+          const index = randomInt(pool.length);
+          results.push(pool[index]);
+          pool.splice(index, 1);
+        }
+
+        return results;
+      }
+
+      function seatText(seat) {
+        return `${seat.area} ${seat.row}列 ${seat.number}番`;
+      }
+
+      function seatTags(seat) {
+        const tags = [];
+        if (seat.isFront) tags.push("✨ 最前列");
+        if (seat.isAisle) tags.push("🌟 通路側");
+        return tags;
+      }
+
+      function renderSingle(seat) {
+        const tags = seatTags(seat);
+
+        $("singleResult").innerHTML = `
+          <div class="hero">
+            <div class="hero-area">${escapeHtml(seat.area)}</div>
+            <div class="hero-seat">${escapeHtml(seat.row)}列 ${seat.number}番</div>
+            ${
+              tags.length
+                ? tags.map(tag => `<span class="badge">${escapeHtml(tag)}</span>`).join("")
+                : ""
+            }
+          </div>
+        `;
+
+        $("batchSummary").hidden = true;
+        $("batchResults").innerHTML = "";
+      }
+
+      function renderBatch(seats) {
+        $("singleResult").innerHTML = "";
+
+        const frontCount = seats.filter(seat => seat.isFront).length;
+        const aisleCount = seats.filter(seat => seat.isAisle).length;
+        const specialCount = seats.filter(seat => seat.isFront || seat.isAisle).length;
+
+        $("batchSummary").innerHTML = [
+          { value: `${frontCount}/${seats.length}`, label: "最前列" },
+          { value: `${aisleCount}/${seats.length}`, label: "通路側" },
+          { value: `${specialCount}/${seats.length}`, label: "いずれか該当" }
+        ].map(stat => `
+          <div class="stat">
+            <strong>${stat.value}</strong>
+            <span>${stat.label}</span>
+          </div>
+        `).join("");
+
+        $("batchSummary").hidden = false;
+
+        $("batchResults").innerHTML = seats.map((seat, index) => {
+          const tags = seatTags(seat);
+
+          return `
+            <div class="result-row">
+              <div class="seat-line">
+                第${index + 1}回：${escapeHtml(seatText(seat))}
+              </div>
+              ${
+                tags.length
+                  ? `<div class="seat-tags">${escapeHtml(tags.join("　"))}</div>`
+                  : ""
+              }
+            </div>
+          `;
+        }).join("");
+      }
+
+      function runDraw() {
+        $("drawError").textContent = "";
+
+        try {
+          if (!hall) {
+            throw new Error("先に会場データを読み込んでください。");
+          }
+
+          const count = Math.min(
+            500,
+            Math.max(1, Math.floor(Number($("trialCount").value) || 1))
+          );
+
+          $("trialCount").value = count;
+
+          const duplicateMode = $("duplicateMode").value;
+          const color = $("accentColor").value;
+
+          setAccent(color);
+
+          const seats = drawSeats(count, duplicateMode === "exclude");
+
+          if (count === 1) renderSingle(seats[0]);
+          else renderBatch(seats);
+
+          history.unshift({
+            hallName: hall.name,
+            timestamp: new Date(),
+            seats
+          });
+
+          history = history.slice(0, 100);
+          renderHistory();
+
+          const plain = [`${hall.name}｜${count}回発券`];
+
+          seats.forEach((seat, index) => {
+            const tags = seatTags(seat);
+            plain.push(
+              `第${index + 1}回：${seatText(seat)}${
+                tags.length ? `｜${tags.join("・")}` : ""
+              }`
+            );
+          });
+
+          lastPlainText = plain.join("\n");
+          lastSettings = { count, duplicateMode, color };
+
+          $("resultCard").hidden = false;
+          $("resultCard").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        } catch (error) {
+          $("drawError").textContent =
+            error instanceof Error ? error.message : "発券に失敗しました。";
+        }
+      }
+
+      function renderHistory() {
+        $("historyCount").textContent = `${history.length}件`;
+
+        if (history.length === 0) {
+          $("history").innerHTML =
+            '<p class="note" style="margin:0;">まだ履歴はありません。</p>';
+          return;
+        }
+
+        $("history").innerHTML = history.map(entry => {
+          const date = entry.timestamp.toLocaleString("ja-JP", {
+            month: "numeric",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+
+          const first = entry.seats[0];
+          const more = entry.seats.length > 1 ? `ほか${entry.seats.length - 1}件` : "";
+          const special = entry.seats.filter(
+            seat => seat.isFront || seat.isAisle
+          ).length;
+
+          return `
+            <div class="result-row">
+              <div class="seat-line">${escapeHtml(entry.hallName)}</div>
+              <div>
+                ${escapeHtml(seatText(first))}
+                ${more ? `・${escapeHtml(more)}` : ""}
+              </div>
+              <div class="hint">${escapeHtml(date)}・特別表示 ${special}件</div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      async function copyResult() {
+        if (!lastPlainText) return;
+
+        const button = $("copyResult");
+        const original = button.textContent;
+
+        try {
+          await navigator.clipboard.writeText(lastPlainText);
+        } catch {
+          const textarea = document.createElement("textarea");
+          textarea.value = lastPlainText;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        }
+
+        button.textContent = "コピーしました";
+        setTimeout(() => {
+          button.textContent = original;
+        }, 1200);
+      }
+
+      $("hallFile").addEventListener("change", async event => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          loadHallFromText(text, file.name);
+        } catch {
+          $("hallError").textContent = "ファイルを読み込めませんでした。";
+        }
+      });
+
+      $("loadSample").addEventListener(
+        "click",
+        () => loadHallFromText(SAMPLE_MD, "内蔵サンプル")
+      );
+
+      $("accentColor").addEventListener(
+        "input",
+        event => setAccent(event.target.value)
+      );
+
+      $("runDraw").addEventListener("click", runDraw);
+
+      $("rerun").addEventListener("click", () => {
+        if (lastSettings) {
+          $("trialCount").value = lastSettings.count;
+          $("duplicateMode").value = lastSettings.duplicateMode;
+          $("accentColor").value = lastSettings.color;
+          setAccent(lastSettings.color);
+        }
+        runDraw();
+      });
+
+      $("copyResult").addEventListener("click", copyResult);
+
+      $("clearHistory").addEventListener("click", () => {
+        history = [];
+        renderHistory();
+      });
+
+      setAccent($("accentColor").value);
+    })();
+  </script>
+</body>
+</html>
