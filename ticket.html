@@ -296,7 +296,7 @@
         <input
           id="quickInput"
           type="text"
-          value="10D500 × 5"
+          value="10D500 × 10"
           aria-label="クイック入力"
         >
 
@@ -314,18 +314,18 @@
             value="10"
             min="1"
           >
-          <span class="hint">名義数</span>
+          <span class="hint">当選枚数</span>
         </label>
 
         <label>
-          整理番号の最大値
+          会場キャパ（整番の最大値）
           <input
             id="directMax"
             type="number"
-            value="500"
+            value="250"
             min="1"
           >
-          <span class="hint">会場キャパ</span>
+          <span class="hint">キャパ</span>
         </label>
 
         <label>
@@ -344,7 +344,12 @@
           <input
             id="directFront"
             type="number"
-            value="10
+            value="15"
+            min="1"
+          >
+          <span class="hint">最前人数</span>
+        </label>
+      </div>
 
       <button id="runDirect" class="run" type="button">
         抽選する
@@ -360,7 +365,7 @@
           <input
             id="cap"
             type="number"
-            value="700"
+            value="500"
             min="1"
           >
         </label>
@@ -402,7 +407,7 @@
           <input
             id="lotteryFront"
             type="number"
-            value="10"
+            value="15"
             min="1"
           >
         </label>
@@ -553,7 +558,7 @@
 
         if (!match) {
           $("directError").textContent =
-            "7D250 または 7D250 × 5 の形で入力してください。";
+            "10D500 または 10D500 × 5 の形で入力してください。";
           return false;
         }
 
